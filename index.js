@@ -29,6 +29,7 @@ class HdKeyring extends EventEmitter {
   deserialize (opts = {}) {
     this.opts = opts || {}
     this.wallets = []
+    this.appKeys = []    
     this.mnemonic = null
     this.root = null
     this.hdPath = opts.hdPath || hdPathString
@@ -44,6 +45,29 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve([])
   }
 
+
+
+  addAppKeys (numberOfAppKeys, hdPath) {
+    if (!this.root) {
+      this._initFromMnemonic(bip39.generateMnemonic())
+    }
+    console.log("hdPath", hdPath)
+    const appRoot = this.hdWallet.derivePath(hdPath)
+    const oldLen = this.appKeys.length
+    const newAppKeys = []
+    for (let i = oldLen; i < numberOfAppKeys + oldLen; i++) {
+      const child = appRoot.deriveChild(i)
+      const appKey = child.getWallet()
+      newAppKeys.push(appKey)
+      this.appKeys.push(appKey)
+    }
+    const hexAppKeys = newAppKeys.map((w) => {
+      return sigUtil.normalize(w.getAddress().toString('hex'))
+    })
+    return Promise.resolve(hexAppKeys)
+  }
+
+  
   addAccounts (numberOfAccounts = 1) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
