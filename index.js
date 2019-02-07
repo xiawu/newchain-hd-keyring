@@ -151,6 +151,7 @@ class HdKeyring extends EventEmitter {
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath).filter((appKey) => appKey.index === index)
     if (previouslyCreated[0]) {
       console.log(previouslyCreated[0])
+      return Promise.resolve(previouslyCreated.publicKey)
     }
     const pubKey = this.createAppKey(hdPath, index)    
     return Promise.resolve(pubKey)
