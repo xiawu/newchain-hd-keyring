@@ -47,26 +47,6 @@ class HdKeyring extends EventEmitter {
 
 
 
-  addAppKeys (numberOfAppKeys, hdPath) {
-    if (!this.root) {
-      this._initFromMnemonic(bip39.generateMnemonic())
-    }
-    console.log("hdPath", hdPath)
-    const appRoot = this.hdWallet.derivePath(hdPath)
-    const oldLen = this.appKeys.length
-    const newAppKeys = []
-    for (let i = oldLen; i < numberOfAppKeys + oldLen; i++) {
-      const child = appRoot.deriveChild(i)
-      const appKey = child.getWallet()
-      newAppKeys.push(appKey)
-      this.appKeys.push(appKey)
-    }
-    const hexAppKeys = newAppKeys.map((w) => {
-      return sigUtil.normalize(w.getAddress().toString('hex'))
-    })
-    return Promise.resolve(hexAppKeys)
-  }
-
   
   addAccounts (numberOfAccounts = 1) {
     if (!this.root) {
@@ -164,6 +144,45 @@ class HdKeyring extends EventEmitter {
               (sigUtil.normalize(address) === targetAddress))
     })
   }
+
+
+  getPubKey(hdPath, index) {
+    console.log(this.appKeys.filter((appKey) => appKey.hdPath === hdPath))
+    const pubKey = this.createAppKey(hdPath, index)    
+    return Promise.resolve(pubKey)
+  }
+  // App keys
+  createAppKey (hdPath, index) {
+    if (!this.root) {
+      this._initFromMnemonic(bip39.generateMnemonic())
+    }
+    console.log("hdPath", hdPath)
+    const appRoot = this.hdWallet.derivePath(hdPath)
+    const oldLen = this.appKeys.length
+    const newAppKey = []
+    const child = appRoot.deriveChild(index)
+    const appKey = {hdPath,
+		    index,
+		    account: child.getWallet()}
+    newAppKey.push(appKey)
+    this.appKeys.push(appKey)
+
+    const hexNewAppKey = newAppKey.map((w) => {
+      return sigUtil.normalize(w.account.getAddress().toString('hex'))
+    })
+    return Promise.resolve(hexNewAppKey)
+  }
+
+  getXPubKey(hdPath, index) {
+    if (!this.root) {
+      this._initFromMnemonic(bip39.generateMnemonic())
+    }
+    console.log("hdPath", hdPath)
+    const XPubKey = this.hdWallet.publicExtendedKey()
+    return Promise.resolve(XPubKey)    
+  }
+
+  
 }
 
 HdKeyring.type = type
