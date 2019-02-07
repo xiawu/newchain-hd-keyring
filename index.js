@@ -147,7 +147,11 @@ class HdKeyring extends EventEmitter {
 
 
   getPubKey(hdPath, index) {
-    console.log(this.appKeys.filter((appKey) => appKey.hdPath === hdPath))
+    console.log("GET PUB KEY hd-keyring")
+    const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath).filter((appKey) => appKey.index === index)
+    if (previouslyCreated[0]) {
+      console.log(previouslyCreated[0])
+    }
     const pubKey = this.createAppKey(hdPath, index)    
     return Promise.resolve(pubKey)
   }
@@ -161,16 +165,15 @@ class HdKeyring extends EventEmitter {
     const oldLen = this.appKeys.length
     const newAppKey = []
     const child = appRoot.deriveChild(index)
+    const wallet = child.getWallet()
+    const hexKey = sigUtil.normalize(wallet.getAddress().toString('hex'))
     const appKey = {hdPath,
 		    index,
-		    account: child.getWallet()}
+		    account: wallet,
+		    publicKey: hexKey}
     newAppKey.push(appKey)
     this.appKeys.push(appKey)
-
-    const hexNewAppKey = newAppKey.map((w) => {
-      return sigUtil.normalize(w.account.getAddress().toString('hex'))
-    })
-    return Promise.resolve(hexNewAppKey)
+    return Promise.resolve(hexKey)
   }
 
   getXPubKey(hdPath, index) {
