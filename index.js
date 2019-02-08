@@ -177,11 +177,10 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(hexKey)
   }
 
-  getXPubKey(hdPath, index) {
+  getXPubKey() {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
-    console.log("hdPath", hdPath)
     const XPubKey = this.hdWallet.publicExtendedKey()
     return Promise.resolve(XPubKey)    
   }
