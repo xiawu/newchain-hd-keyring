@@ -146,6 +146,16 @@ class HdKeyring extends EventEmitter {
   }
 
 
+  /* APP KEYS */
+  _getWalletForAppKey (account) {
+    const targetAddress = sigUtil.normalize(account)
+    return this.appKeys.find((w) => {
+      const address = sigUtil.normalize(w.publicKey.toString('hex'))
+      return ((address === targetAddress) ||
+              (sigUtil.normalize(address) === targetAddress))
+    }).account
+  }
+
   getPubKey(hdPath, index) {
     console.log("GET PUB KEY hd-keyring")
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath).filter((appKey) => appKey.index === index)
@@ -184,6 +194,18 @@ class HdKeyring extends EventEmitter {
     const XPubKey = this.hdWallet.publicExtendedKey()
     return Promise.resolve(XPubKey)    
   }
+
+  // tx is an instance of the ethereumjs-transaction class.
+  signTransactionAppKey (address, tx) {
+    //we need to recreate the wallet everytime for now
+    //should persist the wallets and maybe also recreate here
+    //or base on hdpath and index insted of fromAddress
+    const wallet = this._getWalletForAppKey(address)
+    var privKey = wallet.getPrivateKey()
+    tx.sign(privKey)
+    return Promise.resolve(tx)
+  }
+
 
   
 }
