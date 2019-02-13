@@ -191,8 +191,9 @@ class HdKeyring extends EventEmitter {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
-    const XPubKey = this.hdWallet.publicExtendedKey()
-    return Promise.resolve(XPubKey)    
+    const xPubKey = this.hdWallet.publicExtendedKey()
+    console.log("hd keyring", xPubKey)
+    return Promise.resolve(xPubKey)    
   }
 
   // tx is an instance of the ethereumjs-transaction class.
