@@ -207,6 +207,15 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(tx)
   }
 
+  signTypedDataAppKey (withAccount, typedData) {
+    console.log("hd keyring controller")
+    console.log(withAccount)
+    console.log(typedData)
+    const wallet = this._getWalletForAppKey(withAccount)
+    const privKey = ethUtil.toBuffer(wallet.getPrivateKey())
+    const signature = sigUtil.signTypedData(privKey, { data: typedData })
+    return Promise.resolve(signature)
+  }
 
   
 }
