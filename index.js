@@ -156,18 +156,27 @@ class HdKeyring extends EventEmitter {
     }).account
   }
 
-  getPubKey(hdPath, index) {
+  getXPubKey() {
+    if (!this.root) {
+      this._initFromMnemonic(bip39.generateMnemonic())
+    }
+    const xPubKey = this.hdWallet.publicExtendedKey()
+    console.log("hd keyring", xPubKey)
+    return Promise.resolve(xPubKey)    
+  }
+
+  eth_getAppPubKey(hdPath, index) {
     console.log("GET PUB KEY hd-keyring")
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath).filter((appKey) => appKey.index === index)
     if (previouslyCreated[0]) {
       console.log(previouslyCreated[0])
       return Promise.resolve(previouslyCreated[0].publicKey)
     }
-    const pubKey = this.createAppKey(hdPath, index)    
+    const pubKey = this.eth_createAppKey(hdPath, index)    
     return Promise.resolve(pubKey)
   }
   // App keys
-  createAppKey (hdPath, index) {
+  eth_createAppKey (hdPath, index) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
@@ -187,17 +196,9 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(hexKey)
   }
 
-  getXPubKey() {
-    if (!this.root) {
-      this._initFromMnemonic(bip39.generateMnemonic())
-    }
-    const xPubKey = this.hdWallet.publicExtendedKey()
-    console.log("hd keyring", xPubKey)
-    return Promise.resolve(xPubKey)    
-  }
 
   // tx is an instance of the ethereumjs-transaction class.
-  signTransactionAppKey (address, tx) {
+  eth_signTransactionAppKey (address, tx) {
     //we need to recreate the wallet everytime for now
     //should persist the wallets and maybe also recreate here
     //or base on hdpath and index insted of fromAddress
@@ -207,7 +208,7 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(tx)
   }
 
-  signTypedDataAppKey (withAccount, typedData) {
+  eth_signTypedDataAppKey (withAccount, typedData) {
     console.log("hd keyring controller")
     console.log(withAccount)
     console.log(typedData)
