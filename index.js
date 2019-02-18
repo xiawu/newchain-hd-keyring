@@ -150,13 +150,13 @@ class HdKeyring extends EventEmitter {
   _getWalletForAppKey (account) {
     const targetAddress = sigUtil.normalize(account)
     return this.appKeys.find((w) => {
-      const address = sigUtil.normalize(w.publicKey.toString('hex'))
+      const address = sigUtil.normalize(w.address.toString('hex'))
       return ((address === targetAddress) ||
               (sigUtil.normalize(address) === targetAddress))
     }).account
   }
 
-  getXPubKey() {
+  appKey_getXPubKey() {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
@@ -165,18 +165,18 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(xPubKey)    
   }
 
-  eth_getAppPubKey(hdPath, index) {
-    console.log("GET PUB KEY hd-keyring")
+  appKey_eth_getAddress(hdPath, index) {
+    console.log("GET Address hd-keyring")
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath).filter((appKey) => appKey.index === index)
     if (previouslyCreated[0]) {
       console.log(previouslyCreated[0])
-      return Promise.resolve(previouslyCreated[0].publicKey)
+      return Promise.resolve(previouslyCreated[0].address)
     }
-    const pubKey = this.eth_createAppKey(hdPath, index)    
-    return Promise.resolve(pubKey)
+    const address = this.appKey_eth_createWallet(hdPath, index)    
+    return Promise.resolve(address)
   }
   // App keys
-  eth_createAppKey (hdPath, index) {
+  appKey_eth_createWallet (hdPath, index) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
@@ -190,7 +190,7 @@ class HdKeyring extends EventEmitter {
     const appKey = {hdPath,
 		    index,
 		    account: wallet,
-		    publicKey: hexKey}
+		    address: hexKey}
     newAppKey.push(appKey)
     this.appKeys.push(appKey)
     return Promise.resolve(hexKey)
@@ -198,7 +198,7 @@ class HdKeyring extends EventEmitter {
 
 
   // tx is an instance of the ethereumjs-transaction class.
-  eth_signTransactionAppKey (address, tx) {
+  appKey_eth_signTransaction (address, tx) {
     //we need to recreate the wallet everytime for now
     //should persist the wallets and maybe also recreate here
     //or base on hdpath and index insted of fromAddress
@@ -208,7 +208,7 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(tx)
   }
 
-  eth_signTypedDataAppKey (withAccount, typedData) {
+  appKey_eth_signTypedData (withAccount, typedData) {
     console.log("hd keyring controller")
     console.log(withAccount)
     console.log(typedData)
