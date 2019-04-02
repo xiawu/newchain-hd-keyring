@@ -8,6 +8,11 @@ const sigUtil = require('eth-sig-util')
 const hdPathString = `m/44'/60'/0'/0`
 const type = 'HD Key Tree'
 
+
+const elliptic = require('elliptic')
+const hash = require('hash.js')
+var BN = require('bn.js');
+
 class HdKeyring extends EventEmitter {
 
   /* PUBLIC METHODS */
@@ -147,81 +152,116 @@ class HdKeyring extends EventEmitter {
 
 
   /* APP KEYS */
-  _getWalletForAppKey (account) {
-    const targetAddress = sigUtil.normalize(account)
-    return this.appKeys.find((w) => {
-      const address = sigUtil.normalize(w.address.toString('hex'))
-      return ((address === targetAddress) ||
-              (sigUtil.normalize(address) === targetAddress))
-    }).account
-  }
 
-  appKey_eth_getPublicKey(hdPath) {
-    if (!this.root) {
-      this._initFromMnemonic(bip39.generateMnemonic())
-    }
-    const child = this.hdWallet.derivePath(hdPath)
-    console.log("full hdPath", hdPath)    
-    console.log("debug child", child)    
-    const wallet = child.getWallet()
-    const xPubKey = wallet.getPublicKeyString()
-    console.log("publicKey", xPubKey)
-    return Promise.resolve(xPubKey)    
-  }
-
-  appKey_eth_getAddress(hdPath) {
-    console.log("GET Address hd-keyring")
-    const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath)
-    if (previouslyCreated[0]) {
-      console.log(previouslyCreated[0])
-      return Promise.resolve(previouslyCreated[0].address)
-    }
-    const address = this.appKey_eth_createWallet(hdPath)    
-    return Promise.resolve(address)
-  }
-  // App keys
-  appKey_eth_createWallet (hdPath) {
+  // private
+  _appKey_ec_createKeyPair(hdPath) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
     console.log("full hdPath", hdPath)
-
-    const newAppKey = []
-
     const child = this.hdWallet.derivePath(hdPath)
     console.log("debug child", child)
-    const wallet = child.getWallet()
-    console.log("debug wallet", wallet)
-    console.log("debug pub key", wallet.getPublicKey())
-    console.log("debug pub key string", wallet.getPublicKeyString())
-    const hexKey = sigUtil.normalize(wallet.getAddress().toString('hex'))
+    const keyPair = child.getWallet()
+    const hexKey = sigUtil.normalize(keyPair.getAddress().toString('hex'))
     const appKey = {hdPath,
-		    account: wallet,
+		    keyPair,
 		    address: hexKey}
-    newAppKey.push(appKey)
     this.appKeys.push(appKey)
-    return Promise.resolve(hexKey)
+    return Promise.resolve(keyPair)
   }
 
+  // private
+  _appKey_ec_getKeyPair(hdPath) {
+    const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath)
+    if (previouslyCreated[0]) {
+      console.log(previouslyCreated[0])
+      return Promise.resolve(previouslyCreated[0].keyPair)
+    }
+    const keyPair = this._appKey_ec_createKeyPair(hdPath)    
+    return Promise.resolve(keyPair)
+  }
+  // _appKey_ec_getKeyPairByAddress (address) {
+  //   const targetAddress = sigUtil.normalize(address)
+  //   return this.appKeys.find((w) => {
+  //     address = sigUtil.normalize(w.address.toString('hex'))
+  //     return ((address === targetAddress) ||
+  //             (sigUtil.normalize(address) === targetAddress))
+  //   }).keyPair
+  // }
+  
+  async appKey_ec_getPublicKey(hdPath) {
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const pubKey = keyPair.getPublicKeyString()
+    return Promise.resolve(pubKey)    
+  }
+
+  // eth methods:
+
+  async appKey_eth_getPublicKey(hdPath) {
+    return this.appKey_ec_getPublicKey(hdPath)
+  }
+
+  async appKey_eth_getAddress(hdPath) {
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const address = sigUtil.normalize(keyPair.getAddress().toString('hex'))
+    return Promise.resolve(address)
+  }
+
+  // requires msg of length 64 chars hence 32 bytes, 256 bits
+  async appKey_eth_signMessage (hdPath, message) {
+    console.log("lenght of message: ", message.length)
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    var privKey = keyPair.getPrivateKey()
+    message = ethUtil.stripHexPrefix(message)
+    var msgSig = ethUtil.ecsign(new Buffer(message, 'hex'), privKey)
+    var rawMsgSig = ethUtil.bufferToHex(sigUtil.concatSig(msgSig.v, msgSig.r, msgSig.s))
+    return Promise.resolve(rawMsgSig)
+  }
 
   // tx is an instance of the ethereumjs-transaction class.
-  appKey_eth_signTransaction (address, tx) {
-    const wallet = this._getWalletForAppKey(address)
-    var privKey = wallet.getPrivateKey()
+  async appKey_eth_signTransaction (hdPath, tx) {
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    var privKey = keyPair.getPrivateKey()
     tx.sign(privKey)
     return Promise.resolve(tx)
   }
 
-  appKey_eth_signTypedData (withAccount, typedData) {
-    console.log("hd keyring controller")
-    console.log(withAccount)
-    console.log(typedData)
-    const wallet = this._getWalletForAppKey(withAccount)
-    const privKey = ethUtil.toBuffer(wallet.getPrivateKey())
+  async appKey_eth_signTypedData (hdPath, typedData) {
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
     const signature = sigUtil.signTypedData(privKey, { data: typedData })
     return Promise.resolve(signature)
   }
 
+  // stark methods
+  async appKey_stark_signMessage (hdPath, message) {
+    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
+
+    // test: with below privKey
+    // signing "1e542e2da71b3f5d7b4e9d329b4d30ac0b5d6f266ebef7364bf61c39aac35d0" + "0"
+    // gives r: "1408ea79096199916cbf2c7a5162aa8973704dbd325cdb4e7d9dcef4dc686f7"
+    // and v: "5635c32072ffbb750006652e6185bd1d2fcbd71306ec500d103530d687139d3"
+    // const privKey = new BN("3c1e9550e66958296d11b60f8e8e7a7ad990d07fa65d5f7652c4a6c87d4e3cc", 16);
+    
+    var ec = new elliptic.ec(new elliptic.curves.PresetCurve({
+      type: 'short',
+      prime: null,
+      p: '08000000 00000011 00000000 00000000 00000000 00000000 00000000 00000001',
+      a: '00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000001',
+      b: '06f21413 efbe40de 150e596d 72f7a8c5 609ad26c 15c915c1 f4cdfcb9 9cee9e89',
+      n: '08000000 00000010 ffffffff ffffffff b781126d cae7b232 1e66a241 adc64d2f',
+      hash: hash.sha256,
+      gRed: false,
+      g: [
+        '01ef15c1 8599971b 7beced41 5a40f0c7 deacfd9b 0d1819e0 3d723d8b c943cfca',
+        '00566806 0aa49730 b7be4801 df46ec62 de53ecd1 1abe43a3 2873000c 36e8dc1f'
+      ]
+    }))
+    var signature = ec.keyFromPrivate(privKey).sign(message)
+    return Promise.resolve(signature)
+  }
+    
   
 }
 
