@@ -154,7 +154,7 @@ class HdKeyring extends EventEmitter {
   /* APP KEYS */
 
   // private
-  _appKey_ec_createKeyPair(hdPath) {
+  _appKey_ecc_createKeyPair(hdPath) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
@@ -171,13 +171,13 @@ class HdKeyring extends EventEmitter {
   }
 
   // private
-  _appKey_ec_getKeyPair(hdPath) {
+  _appKey_ecc_getKeyPair(hdPath) {
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath)
     if (previouslyCreated[0]) {
       console.log(previouslyCreated[0])
       return Promise.resolve(previouslyCreated[0].keyPair)
     }
-    const keyPair = this._appKey_ec_createKeyPair(hdPath)    
+    const keyPair = this._appKey_ecc_createKeyPair(hdPath)    
     return Promise.resolve(keyPair)
   }
   // _appKey_ec_getKeyPairByAddress (address) {
@@ -189,8 +189,8 @@ class HdKeyring extends EventEmitter {
   //   }).keyPair
   // }
   
-  async appKey_ec_getPublicKey(hdPath) {
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+  async appKey_ecc_getPublicKey(hdPath) {
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     const pubKey = keyPair.getPublicKeyString()
     return Promise.resolve(pubKey)    
   }
@@ -198,11 +198,11 @@ class HdKeyring extends EventEmitter {
   // eth methods:
 
   async appKey_eth_getPublicKey(hdPath) {
-    return this.appKey_ec_getPublicKey(hdPath)
+    return this.appKey_ecc_getPublicKey(hdPath)
   }
 
   async appKey_eth_getAddress(hdPath) {
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     const address = sigUtil.normalize(keyPair.getAddress().toString('hex'))
     return Promise.resolve(address)
   }
@@ -210,7 +210,7 @@ class HdKeyring extends EventEmitter {
   // requires msg of length 64 chars hence 32 bytes, 256 bits
   async appKey_eth_signMessage (hdPath, message) {
     console.log("lenght of message: ", message.length)
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     var privKey = keyPair.getPrivateKey()
     message = ethUtil.stripHexPrefix(message)
     var msgSig = ethUtil.ecsign(new Buffer(message, 'hex'), privKey)
@@ -220,14 +220,14 @@ class HdKeyring extends EventEmitter {
 
   // tx is an instance of the ethereumjs-transaction class.
   async appKey_eth_signTransaction (hdPath, tx) {
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     var privKey = keyPair.getPrivateKey()
     tx.sign(privKey)
     return Promise.resolve(tx)
   }
 
   async appKey_eth_signTypedData (hdPath, typedData) {
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
     const signature = sigUtil.signTypedData(privKey, { data: typedData })
     return Promise.resolve(signature)
@@ -235,13 +235,14 @@ class HdKeyring extends EventEmitter {
 
   // stark methods
   async appKey_stark_signMessage (hdPath, message) {
-    const keyPair = await this._appKey_ec_getKeyPair(hdPath)
+    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
 
     // test: with below privKey
     // signing "1e542e2da71b3f5d7b4e9d329b4d30ac0b5d6f266ebef7364bf61c39aac35d0" + "0"
     // gives r: "1408ea79096199916cbf2c7a5162aa8973704dbd325cdb4e7d9dcef4dc686f7"
     // and v: "5635c32072ffbb750006652e6185bd1d2fcbd71306ec500d103530d687139d3"
+    
     // const privKey = new BN("3c1e9550e66958296d11b60f8e8e7a7ad990d07fa65d5f7652c4a6c87d4e3cc", 16);
     
     var ec = new elliptic.ec(new elliptic.curves.PresetCurve({
