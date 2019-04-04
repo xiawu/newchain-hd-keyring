@@ -226,7 +226,7 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(tx)
   }
 
-  async appKey_eth_signTypedData (hdPath, typedData) {
+  async appKey_eth_signTypedMessage (hdPath, typedData) {
     const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
     const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
     const signature = sigUtil.signTypedData(privKey, { data: typedData })
