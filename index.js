@@ -154,7 +154,7 @@ class HdKeyring extends EventEmitter {
   /* APP KEYS */
 
   // private
-  _appKey_ecc_createKeyPair(hdPath) {
+  _appKey_secp256k1_createKeyPair(hdPath) {
     if (!this.root) {
       this._initFromMnemonic(bip39.generateMnemonic())
     }
@@ -170,14 +170,21 @@ class HdKeyring extends EventEmitter {
     return Promise.resolve(keyPair)
   }
 
+
+
+  // TODO:
+  // Warning in fact the public keys / addresses are impacted by the ECDSA method curve parameters, only the private key is not
+  // So this should be refactored.
+  // ETH and BTC public keys are the same because we use secp256k1 in both cases
+  
   // private
-  _appKey_ecc_getKeyPair(hdPath) {
+  _appKey_secp256k1_getKeyPair(hdPath) {
     const previouslyCreated = this.appKeys.filter((appKey) => appKey.hdPath === hdPath)
     if (previouslyCreated[0]) {
       console.log(previouslyCreated[0])
       return Promise.resolve(previouslyCreated[0].keyPair)
     }
-    const keyPair = this._appKey_ecc_createKeyPair(hdPath)    
+    const keyPair = this._appKey_secp256k1_createKeyPair(hdPath)    
     return Promise.resolve(keyPair)
   }
   // _appKey_ec_getKeyPairByAddress (address) {
@@ -189,20 +196,24 @@ class HdKeyring extends EventEmitter {
   //   }).keyPair
   // }
   
-  async appKey_ecc_getPublicKey(hdPath) {
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+  async appKey_secp256k1_getPublicKey(hdPath) {
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath)
     const pubKey = keyPair.getPublicKeyString()
     return Promise.resolve(pubKey)    
   }
 
+  
+
+
+
   // eth methods:
 
   async appKey_eth_getPublicKey(hdPath) {
-    return this.appKey_ecc_getPublicKey(hdPath)
+    return this.appKey_secp256k1_getPublicKey(hdPath)
   }
 
   async appKey_eth_getAddress(hdPath) {
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath)
     const address = sigUtil.normalize(keyPair.getAddress().toString('hex'))
     return Promise.resolve(address)
   }
@@ -210,7 +221,7 @@ class HdKeyring extends EventEmitter {
   // requires msg of length 64 chars hence 32 bytes, 256 bits
   async appKey_eth_signMessage (hdPath, message) {
     console.log("lenght of message: ", message.length)
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath)
     var privKey = keyPair.getPrivateKey()
     message = ethUtil.stripHexPrefix(message)
     var msgSig = ethUtil.ecsign(new Buffer(message, 'hex'), privKey)
@@ -220,22 +231,26 @@ class HdKeyring extends EventEmitter {
 
   // tx is an instance of the ethereumjs-transaction class.
   async appKey_eth_signTransaction (hdPath, tx) {
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath)
     var privKey = keyPair.getPrivateKey()
     tx.sign(privKey)
     return Promise.resolve(tx)
   }
 
   async appKey_eth_signTypedMessage (hdPath, typedData) {
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath)
     const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
     const signature = sigUtil.signTypedData(privKey, { data: typedData })
     return Promise.resolve(signature)
   }
 
+
+  
+
   // stark methods
   async appKey_stark_signMessage (hdPath, message) {
-    const keyPair = await this._appKey_ecc_getKeyPair(hdPath)
+
+    const keyPair = await this._appKey_secp256k1_getKeyPair(hdPath) //warning this is fine because we only use the private key, but the public key is wrong here for stark curves
     const privKey = ethUtil.toBuffer(keyPair.getPrivateKey())
 
     // test: with below privKey
