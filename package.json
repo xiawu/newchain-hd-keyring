@@ -1,6 +1,6 @@
 {
   "name": "newchain-hd-keyring",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A simple standard interface for a seed phrase generated set of NewChain accounts.",
   "main": "index.js",
   "scripts": {
@@ -28,10 +28,10 @@
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-wallet": "^0.6.0",
     "events": "^1.1.1",
-    "newchain-sig-util": "^0.1.0",
-    "newchain-simple-keyring": "^0.1.0",
-    "newchainjs-util": "^0.1.2",
-    "newchainjs-wallet": "^0.1.0",
+    "newchain-sig-util": "latest",
+    "newchain-simple-keyring": "latest",
+    "newchainjs-util": "latest",
+    "newchainjs-wallet": "latest",
     "xtend": "^4.0.1"
   },
   "devDependencies": {
