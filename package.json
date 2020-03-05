@@ -1,25 +1,25 @@
 {
-  "name": "eth-hd-keyring",
-  "version": "3.5.0",
-  "description": "A simple standard interface for a seed phrase generated set of Ethereum accounts.",
+  "name": "newchain-hd-keyring",
+  "version": "0.1.0",
+  "description": "A simple standard interface for a seed phrase generated set of NewChain accounts.",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/MetaMask/eth-hd-keyring.git"
+    "url": "git+ssh://git@github.com/xiawu/newchain-hd-keyring.git"
   },
   "keywords": [
-    "ethereum",
+    "NewChain",
     "keyring"
   ],
   "author": "Dan Finlay",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/MetaMask/eth-hd-keyring/issues"
+    "url": "https://github.com/xiawu/newchain-hd-keyring/issues"
   },
-  "homepage": "https://github.com/MetaMask/eth-hd-keyring#readme",
+  "homepage": "https://github.com/xiawu/newchain-hd-keyring#readme",
   "dependencies": {
     "bip39": "^2.2.0",
     "eth-sig-util": "^2.4.4",
@@ -28,6 +28,9 @@
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-wallet": "^0.6.0",
     "events": "^1.1.1",
+    "newchain-sig-util": "^0.1.0",
+    "newchainjs-util": "^0.1.2",
+    "newchainjs-wallet": "^0.1.0",
     "xtend": "^4.0.1"
   },
   "devDependencies": {
